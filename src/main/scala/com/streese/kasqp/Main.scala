@@ -49,7 +49,7 @@ object Main extends App {
       .via(killSwitch.flow)
       .wireTap { case (res, _) => if (res.isFailure) killSwitch.shutdown() }
       .filter { case (res, _) => res.isSuccess }
-      .map { case (_, c) => c}
+      .map { case (_, c) => c }
       .runWith(Committer.sink(CommitterSettings(system).withMaxBatch(1)))
 
     done.onComplete { msg =>
