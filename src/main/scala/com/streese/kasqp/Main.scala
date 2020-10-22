@@ -37,22 +37,22 @@ object Main extends App {
       res -> c
     }
 
-    val done = Source
-      .combine(wordsByNumberResults, numbersByWordResults)(Merge(_))
-      .via(killSwitch.flow)
-      .wireTap { case (res, _) =>
-        if (res.isFailure) {
-          println(res)
-          killSwitch.shutdown()
-        }
+  val done = Source
+    .combine(wordsByNumberResults, numbersByWordResults)(Merge(_))
+    .via(killSwitch.flow)
+    .wireTap { case (res, _) =>
+      if (res.isFailure) {
+        println(res)
+        killSwitch.shutdown()
       }
-      .filter { case (res, _) => res.isSuccess }
-      .map { case (_, c) => c }
-      .runWith(Committer.sink(CommitterSettings(system).withMaxBatch(1)))
-
-    done.onComplete { res =>
-      println(res)
-      system.terminate()
     }
+    .filter { case (res, _) => res.isSuccess }
+    .map { case (_, c) => c }
+    .runWith(Committer.sink(CommitterSettings(system).withMaxBatch(1)))
+
+  done.onComplete { res =>
+    println(res)
+    system.terminate()
+  }
 
 }
