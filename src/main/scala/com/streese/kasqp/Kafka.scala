@@ -10,7 +10,7 @@ import com.streese.BuildInfo
 object Kafka {
 
   def commitableSource(system: ActorSystem, topic: String) = {
-    val config = system.settings.config.getConfig("kafka-consumer")
+    val config = system.settings.config.getConfig("kafka")
     val settings = ConsumerSettings(config, new StringDeserializer, new StringDeserializer).withGroupId(BuildInfo.name)
     Consumer.committableSource(settings, Subscriptions.topics(topic))
   }

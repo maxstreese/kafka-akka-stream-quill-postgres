@@ -23,38 +23,47 @@ object Main extends App {
   val wordsByNumberResults = Kafka.commitableSource(system, "words-by-number")
     .mapConcat { msg =>
       val words = Option(msg.record.value())
+        .map(_.stripLineEnd)
         .map(_.split(",").toSeq)
         .getOrElse(Seq.empty)
       for (n <- Try(msg.record.key().toInt).toOption.toList) yield WordsByNumber(n, words) -> msg.committableOffset
     }
     .map { case (m, c) =>
-      val res = if (m.words.isEmpty) Postgres.deleteNumber(m.number) else Postgres.upsertWordNumbers(m.wordNumbers)
+      val res = if (m.words.isEmpty) Postgres.deleteNumber(m.number) else Postgres.upsertWordsByNumber(m)
       res -> c
     }
 
   val numbersByWordResults = Kafka.commitableSource(system, "numbers-by-word")
     .map { msg =>
       val numbers = Option(msg.record.value())
+        .map(_.stripLineEnd)
         .flatMap(s => Try(s.split(",").toSeq.map(_.toInt)).toOption)
         .getOrElse(Seq.empty)
       NumbersByWord(msg.record.key(), numbers) -> msg.committableOffset
     }
     .map { case (m, c) =>
-      val res = if (m.numbers.isEmpty) Postgres.deleteWord(m.word) else Postgres.upsertNumberWords(m.numberWords)
+      val res = if (m.numbers.isEmpty) Postgres.deleteWord(m.word) else Postgres.upsertNumbersByWord(m)
       res -> c
     }
 
     val done = Source
       .combine(wordsByNumberResults, numbersByWordResults)(Merge(_))
       .via(killSwitch.flow)
-      .wireTap { case (res, _) => if (res.isFailure) killSwitch.shutdown() }
+      .wireTap { case (res, _) =>
+        if (res.isFailure) {
+          println(res)
+          killSwitch.shutdown()
+        }
+      }
       .filter { case (res, _) => res.isSuccess }
       .map { case (_, c) => c }
       .runWith(Committer.sink(CommitterSettings(system).withMaxBatch(1)))
 
-    done.onComplete { msg =>
-      println(msg)
+    done.onComplete { res =>
+      println(res)
       system.terminate()
     }
+
+    Postgres.upsertNumbersByWord(???)
 
 }

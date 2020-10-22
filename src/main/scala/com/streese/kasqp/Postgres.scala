@@ -20,20 +20,26 @@ object Postgres {
 
   def migrate(): MigrateResult = Flyway.configure().locations("migrations").dataSource(dataSource).load().migrate()
 
-  def upsertNumberWords(words: Seq[NumberWord]): Try[Unit] = Try {
-    run(liftQuery(words).foreach(word => numberWord.insert(word).onConflictIgnore))
+  def upsertNumbersByWord(numbersByWord: NumbersByWord): Try[Unit] = Try {
+    transaction {
+      deleteWordUnsafe(numbersByWord.word)
+      run(liftQuery(numbersByWord.numberWords).foreach(word => numberWord.insert(word).onConflictIgnore))
+    }
   }
 
-  def deleteWord(word: String): Try[Unit] = Try {
-    run(numberWord.filter(_.word == lift(word)).delete)
+  def deleteWord(word: String): Try[Unit] = Try(deleteWordUnsafe(word))
+
+  private def deleteWordUnsafe(word: String) = run(numberWord.filter(_.word == lift(word)).delete)
+
+  def upsertWordsByNumber(wordsByNumber: WordsByNumber): Try[Unit] = Try {
+    transaction {
+      deleteNumberUnsafe(wordsByNumber.number)
+      run(liftQuery(wordsByNumber.wordNumbers).foreach(number => wordNumber.insert(number).onConflictIgnore))
+    }
   }
 
-  def upsertWordNumbers(numbers: Seq[WordNumber]): Try[Unit] = Try {
-    run(liftQuery(numbers).foreach(number => wordNumber.insert(number).onConflictIgnore))
-  }
+  def deleteNumber(number: Int): Try[Unit] = Try(deleteNumberUnsafe(number))
 
-  def deleteNumber(number: Int): Try[Unit] = Try {
-    run(numberWord.filter(_.number == lift(number)).delete)
-  }
+  private def deleteNumberUnsafe(number: Int) = run(wordNumber.filter(_.number == lift(number)).delete)
 
 }
