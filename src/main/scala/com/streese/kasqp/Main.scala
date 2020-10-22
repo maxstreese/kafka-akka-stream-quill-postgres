@@ -1,15 +1,15 @@
 package com.streese.kasqp
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Merge
-import akka.kafka.scaladsl.Committer
 import akka.kafka.CommitterSettings
+import akka.kafka.scaladsl.Committer
+import akka.stream.KillSwitches
+import akka.stream.scaladsl.Merge
+import akka.stream.scaladsl.Source
 import com.streese.BuildInfo
 import com.streese.kasqp.models._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import akka.stream.KillSwitches
 
 object Main extends App {
 
