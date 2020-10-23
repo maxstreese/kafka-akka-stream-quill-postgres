@@ -11,8 +11,8 @@ object models {
   }
 
   object WordsByNumber {
-    def apply(k: String, v: String): Option[WordsByNumber] = {
-      val words = Option(v)
+    def apply(k: String, v: Option[String]): Option[WordsByNumber] = {
+      val words = v
       .map(_.stripLineEnd)
       .map(_.split(",").toSeq)
       .getOrElse(Seq.empty)
@@ -27,8 +27,8 @@ object models {
   }
 
   object NumbersByWord {
-    def apply(k: String, v: String): NumbersByWord = {
-      val numbers = Option(v)
+    def apply(k: String, v: Option[String]): NumbersByWord = {
+      val numbers = v
         .map(_.stripLineEnd)
         .flatMap(s => Try(s.split(",").toSeq.map(_.toInt)).toOption)
         .getOrElse(Seq.empty)
